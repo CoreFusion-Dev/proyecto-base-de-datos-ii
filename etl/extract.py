@@ -14,6 +14,17 @@ MONTHS = list(range(1, 13))
 
 BASE_URL = "https://transtats.bts.gov/PREZIP/On_Time_Reporting_Carrier_On_Time_Performance_1987_present_{year}_{month}.zip"
 
+def is_zip_valid(file_path: str) -> bool:
+    """Verifica si el archivo existe y es un ZIP válido."""
+    if not os.path.exists(file_path):
+        return False
+    try:
+        with zipfile.ZipFile(file_path, 'r') as zf:
+            # zipfile.testzip() retorna None si no hay errores
+            return zf.testzip() is None
+    except (zipfile.BadZipFile, Exception):
+        return False
+
 def download_file(url: str, dest_path: str):
     try:
         response = requests.get(url, stream=True, timeout=120)
@@ -32,6 +43,11 @@ def download_file(url: str, dest_path: str):
                 f.write(chunk)
                 bar.update(len(chunk))
         
+        if not is_zip_valid(dest_path):
+            print(f"  El archivo descargado {os.path.basename(dest_path)} está corrupto.")
+            os.remove(dest_path)
+            return False
+            
         return True
     except Exception as e:
         print(f"  Error durante la descarga: {e}")
@@ -50,10 +66,14 @@ def extract():
             dest_path = os.path.join(OUTPUT_DIR, filename)
 
             # Verificación de integridad del archivo
-            if os.path.exists(dest_path):
-                print(f" Ya existe: {filename}")
+            if is_zip_valid(dest_path):
+                print(f" Ya existe y es válido: {filename}")
                 descargados += 1
                 continue
+            elif os.path.exists(dest_path):
+                # Cuando el archivo existe pero no es válido, se elimina y se vuelve a descargar
+                print(f" Detectado archivo corrupto {filename}. Redescargando...")
+                os.remove(dest_path)
 
             url = BASE_URL.format(year=year, month=month)
             print(f"  → Descargando {filename}...")
