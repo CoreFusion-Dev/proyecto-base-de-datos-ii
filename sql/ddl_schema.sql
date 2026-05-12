@@ -77,3 +77,87 @@ CREATE TABLE IF NOT EXISTS fact_vuelos (
     retraso_seguridad     NUMERIC(8,2),
     retraso_aeronave      NUMERIC(8,2)
 ) PARTITION BY RANGE (fecha_vuelo);
+
+
+-- ══════════════════════════════════════════════════════
+-- PARTICIONES 2021
+-- ══════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS fact_vuelos_2021_q1
+    PARTITION OF fact_vuelos
+    FOR VALUES FROM ('2021-01-01') TO ('2021-04-01');
+
+CREATE TABLE IF NOT EXISTS fact_vuelos_2021_q2
+    PARTITION OF fact_vuelos
+    FOR VALUES FROM ('2021-04-01') TO ('2021-07-01');
+
+CREATE TABLE IF NOT EXISTS fact_vuelos_2021_q3
+    PARTITION OF fact_vuelos
+    FOR VALUES FROM ('2021-07-01') TO ('2021-10-01');
+
+CREATE TABLE IF NOT EXISTS fact_vuelos_2021_q4
+    PARTITION OF fact_vuelos
+    FOR VALUES FROM ('2021-10-01') TO ('2022-01-01');
+
+
+-- ══════════════════════════════════════════════════════
+-- PARTICIONES 2022
+-- ══════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS fact_vuelos_2022_q1
+    PARTITION OF fact_vuelos
+    FOR VALUES FROM ('2022-01-01') TO ('2022-04-01');
+
+CREATE TABLE IF NOT EXISTS fact_vuelos_2022_q2
+    PARTITION OF fact_vuelos
+    FOR VALUES FROM ('2022-04-01') TO ('2022-07-01');
+
+CREATE TABLE IF NOT EXISTS fact_vuelos_2022_q3
+    PARTITION OF fact_vuelos
+    FOR VALUES FROM ('2022-07-01') TO ('2022-10-01');
+
+CREATE TABLE IF NOT EXISTS fact_vuelos_2022_q4
+    PARTITION OF fact_vuelos
+    FOR VALUES FROM ('2022-10-01') TO ('2023-01-01');
+
+
+-- ══════════════════════════════════════════════════════
+-- PARTICIONES 2023
+-- ══════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS fact_vuelos_2023_q1
+    PARTITION OF fact_vuelos
+    FOR VALUES FROM ('2023-01-01') TO ('2023-04-01');
+
+CREATE TABLE IF NOT EXISTS fact_vuelos_2023_q2
+    PARTITION OF fact_vuelos
+    FOR VALUES FROM ('2023-04-01') TO ('2023-07-01');
+
+CREATE TABLE IF NOT EXISTS fact_vuelos_2023_q3
+    PARTITION OF fact_vuelos
+    FOR VALUES FROM ('2023-07-01') TO ('2023-10-01');
+
+CREATE TABLE IF NOT EXISTS fact_vuelos_2023_q4
+    PARTITION OF fact_vuelos
+    FOR VALUES FROM ('2023-10-01') TO ('2024-01-01');
+
+
+-- ══════════════════════════════════════════════════════
+-- PARTICIONES 2024
+-- ══════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS fact_vuelos_2024_q1
+    PARTITION OF fact_vuelos
+    FOR VALUES FROM ('2024-01-01') TO ('2024-04-01');
+
+CREATE TABLE IF NOT EXISTS fact_vuelos_2024_q2
+    PARTITION OF fact_vuelos
+    FOR VALUES FROM ('2024-04-01') TO ('2024-07-01');
+
+CREATE TABLE IF NOT EXISTS fact_vuelos_2024_q3
+    PARTITION OF fact_vuelos
+    FOR VALUES FROM ('2024-07-01') TO ('2024-10-01');
+
+CREATE TABLE IF NOT EXISTS fact_vuelos_2024_q4
+    PARTITION OF fact_vuelos
+    FOR VALUES FROM ('2024-10-01') TO ('2025-01-01');
