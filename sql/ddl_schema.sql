@@ -161,3 +161,33 @@ CREATE TABLE IF NOT EXISTS fact_vuelos_2024_q3
 CREATE TABLE IF NOT EXISTS fact_vuelos_2024_q4
     PARTITION OF fact_vuelos
     FOR VALUES FROM ('2024-10-01') TO ('2025-01-01');
+
+
+-- ══════════════════════════════════════════════════════
+-- FOREIGN KEYS
+-- ══════════════════════════════════════════════════════
+
+ALTER TABLE fact_vuelos
+    ADD CONSTRAINT fk_fact_tiempo
+        FOREIGN KEY (tiempo_id)
+        REFERENCES dim_tiempo(tiempo_id);
+
+ALTER TABLE fact_vuelos
+    ADD CONSTRAINT fk_fact_aerolinea
+        FOREIGN KEY (aerolinea_id)
+        REFERENCES dim_aerolinea(aerolinea_id);
+
+ALTER TABLE fact_vuelos
+    ADD CONSTRAINT fk_fact_origen
+        FOREIGN KEY (aeropuerto_origen_id)
+        REFERENCES dim_aeropuerto(aeropuerto_id);
+
+ALTER TABLE fact_vuelos
+    ADD CONSTRAINT fk_fact_destino
+        FOREIGN KEY (aeropuerto_destino_id)
+        REFERENCES dim_aeropuerto(aeropuerto_id);
+
+ALTER TABLE fact_vuelos
+    ADD CONSTRAINT fk_fact_estado
+        FOREIGN KEY (estado_id)
+        REFERENCES dim_estado_vuelo(estado_id);
