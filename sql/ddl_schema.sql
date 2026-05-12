@@ -43,3 +43,11 @@ CREATE TABLE IF NOT EXISTS dim_aeropuerto (
     pais          VARCHAR(50) DEFAULT 'USA',
     CONSTRAINT uq_dim_aeropuerto_codigo UNIQUE (codigo)
 );
+
+-- Tabla dimensional de estados de vuelos desnormalizada
+CREATE TABLE IF NOT EXISTS dim_estado_vuelo (
+    estado_id    INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    codigo       VARCHAR(20) NOT NULL,
+    descripcion  VARCHAR(100) NOT NULL,
+    CONSTRAINT uq_dim_estado_codigo UNIQUE (codigo)
+);
