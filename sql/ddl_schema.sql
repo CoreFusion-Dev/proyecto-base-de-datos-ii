@@ -1,5 +1,5 @@
 -- ══════════════════════════════════════════════════════
--- DDL SCHEMA - flights_dw
+-- DDL SCHEMA - flights_dw OLAP UMG
 -- Proyecto Final Base de Datos II
 -- Dataset: Airline On-Time Performance (BTS) 2021-2024
 -- PostgreSQL 16.4
@@ -191,3 +191,22 @@ ALTER TABLE fact_vuelos
     ADD CONSTRAINT fk_fact_estado
         FOREIGN KEY (estado_id)
         REFERENCES dim_estado_vuelo(estado_id);
+
+
+-- ══════════════════════════════════════════════════════
+-- ÍNDICES
+-- ══════════════════════════════════════════════════════
+
+-- Índice 1: filtros por fecha (partition pruning)
+CREATE INDEX IF NOT EXISTS idx_fact_fecha
+    ON fact_vuelos (fecha_vuelo);
+
+-- Índice 2: filtros por aerolínea
+CREATE INDEX IF NOT EXISTS idx_fact_aerolinea
+    ON fact_vuelos (aerolinea_id);
+
+-- Índice 3: compuesto aerolínea + fecha
+CREATE INDEX IF NOT EXISTS idx_fact_aerolinea_fecha
+    ON fact_vuelos (aerolinea_id, fecha_vuelo);
+
+
