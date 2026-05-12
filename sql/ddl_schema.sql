@@ -51,3 +51,29 @@ CREATE TABLE IF NOT EXISTS dim_estado_vuelo (
     descripcion  VARCHAR(100) NOT NULL,
     CONSTRAINT uq_dim_estado_codigo UNIQUE (codigo)
 );
+
+
+-- ══════════════════════════════════════════════════════
+-- TABLA DE HECHOS PADRE (particionada por trimestre)
+-- ══════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS fact_vuelos (
+    vuelo_id              BIGINT GENERATED ALWAYS AS IDENTITY,
+    tiempo_id             INTEGER NOT NULL,
+    aerolinea_id          INTEGER NOT NULL,
+    aeropuerto_origen_id  INTEGER NOT NULL,
+    aeropuerto_destino_id INTEGER NOT NULL,
+    estado_id             INTEGER NOT NULL,
+    fecha_vuelo           DATE NOT NULL,
+    retraso_salida        NUMERIC(8,2),
+    retraso_llegada       NUMERIC(8,2),
+    tiempo_vuelo          NUMERIC(8,2),
+    distancia             NUMERIC(10,2),
+    cancelado             BOOLEAN DEFAULT FALSE,
+    desviado              BOOLEAN DEFAULT FALSE,
+    retraso_aerolinea     NUMERIC(8,2),
+    retraso_clima         NUMERIC(8,2),
+    retraso_nas           NUMERIC(8,2),
+    retraso_seguridad     NUMERIC(8,2),
+    retraso_aeronave      NUMERIC(8,2)
+) PARTITION BY RANGE (fecha_vuelo);
