@@ -1,1 +1,25 @@
-.
+-- ══════════════════════════════════════════════════════
+-- DDL SCHEMA - flights_dw
+-- Proyecto Final Base de Datos II
+-- Dataset: Airline On-Time Performance (BTS) 2021-2024
+-- PostgreSQL 16.4
+-- ══════════════════════════════════════════════════════
+
+
+-- ══════════════════════════════════════════════════════
+-- DIMENSIONES
+-- ══════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS dim_tiempo (
+    tiempo_id     INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    fecha         DATE NOT NULL,
+    dia           INTEGER NOT NULL,
+    mes           INTEGER NOT NULL,
+    trimestre     INTEGER NOT NULL,
+    anio          INTEGER NOT NULL,
+    dia_semana    INTEGER NOT NULL,
+    nombre_mes    VARCHAR(20) NOT NULL,
+    nombre_dia    VARCHAR(20) NOT NULL,
+    es_fin_semana BOOLEAN NOT NULL,
+    CONSTRAINT uq_dim_tiempo_fecha UNIQUE (fecha)
+);
