@@ -23,3 +23,12 @@ CREATE TABLE IF NOT EXISTS dim_tiempo (
     es_fin_semana BOOLEAN NOT NULL,
     CONSTRAINT uq_dim_tiempo_fecha UNIQUE (fecha)
 );
+
+
+-- Tabla dimensional de tiempo para registros de arelolinea
+CREATE TABLE IF NOT EXISTS dim_aerolinea (
+    aerolinea_id  INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    codigo        VARCHAR(10) NOT NULL,
+    nombre        VARCHAR(100) NOT NULL,
+    CONSTRAINT uq_dim_aerolinea_codigo UNIQUE (codigo)
+);
