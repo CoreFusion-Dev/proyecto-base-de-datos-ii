@@ -32,3 +32,14 @@ CREATE TABLE IF NOT EXISTS dim_aerolinea (
     nombre        VARCHAR(100) NOT NULL,
     CONSTRAINT uq_dim_aerolinea_codigo UNIQUE (codigo)
 );
+
+-- Tabla dimensional de aeropuestos destructurada
+CREATE TABLE IF NOT EXISTS dim_aeropuerto (
+    aeropuerto_id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    codigo        VARCHAR(10) NOT NULL,
+    ciudad        VARCHAR(100),
+    estado        VARCHAR(10),
+    nombre_estado VARCHAR(100),
+    pais          VARCHAR(50) DEFAULT 'USA',
+    CONSTRAINT uq_dim_aeropuerto_codigo UNIQUE (codigo)
+);
