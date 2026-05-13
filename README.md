@@ -11,7 +11,7 @@ Antes de comenzar, asegúrate de tener instalado:
 
 - **Python 3.8+** ([Descargar](https://www.python.org/downloads/))
   - Verificar: `python --version`
-- **PostgreSQL 16+** ([Descargar](https://www.postgresql.org/download/))
+- **PostgreSQL 12+** ([Descargar](https://www.postgresql.org/download/))
   - Verificar: `psql --version`
 - **Git** ([Descargar](https://git-scm.com/))
 
@@ -20,8 +20,8 @@ Antes de comenzar, asegúrate de tener instalado:
 ### Paso 1: Clonar o descargar el repositorio
 
 ```bash
-git clone git@github.com:CoreFusion-Dev/proyecto-base-de-datos-ii.git
-cd proyecto-base-de-datos-ii/
+git clone https://github.com/KevinCax/proyecto-bdii.git
+cd proyecto-bdii
 ```
 
 ### Paso 2: Crear un entorno virtual
@@ -41,3 +41,244 @@ source venv/bin/activate
 ```bash
 pip install -r requirements.txt
 ```
+
+### Paso 4: Configurar la base de datos PostgreSQL
+
+1. **Crear una nueva base de datos:**
+
+```bash
+psql -U postgres
+```
+
+Dentro de psql:
+```sql
+CREATE DATABASE flights_dw;
+\q
+```
+
+2. **Crear archivo `.env` en la raíz del proyecto:**
+
+Copia el siguiente contenido en un archivo llamado `.env`:
+
+```env
+# Configuración de PostgreSQL
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=flights_dw
+DB_USER=postgres
+DB_PASSWORD=<tu-contraseña-postgres>
+```
+
+**Reemplaza `<tu-contraseña-postgres>` con la contraseña de tu usuario PostgreSQL.**
+
+> ⚠️ **Importante:** El archivo `.env` está incluido en `.gitignore` para evitar exponer credenciales.
+
+### Paso 5: Validar la conexión a la BD
+
+```bash
+python -c "from etl.load import get_connection; conn = get_connection(); print('✅ Conexión exitosa'); conn.close()"
+```
+
+Si ves `✅ Conexión exitosa`, estás listo para continuar.
+
+---
+
+## 📊 Estructura del Proyecto
+
+```
+proyecto-bdii/
+├── etl/
+│   ├── extract.py       # Descarga datos de BTS API (2021-2024)
+│   ├── transform.py     # Limpia y transforma datos
+│   └── load.py          # Carga en PostgreSQL (DDL + Inserción)
+├── sql/
+│   ├── ddl_schema.sql   # Esquema: Dimensiones + Tabla de Hechos
+│   └── queries_analyze.sql # Queries de análisis
+├── staging/
+│   ├── raw/             # Archivos ZIP descargados
+│   └── processed/       # CSVs transformados
+├── explorar.py          # Script para explorar datos antes de cargar
+├── requirements.txt     # Dependencias Python
+├── .env                 # Configuración local (no versionado)
+└── README.md            # Este archivo
+```
+
+---
+
+## ▶️ Cómo Ejecutar el Pipeline
+
+### Opción A: Ejecutar el pipeline completo (recomendado)
+
+```bash
+# 1. Extraer datos (descarga archivos ZIP)
+python etl/extract.py
+
+# 2. Transformar datos (procesa y limpia)
+python etl/transform.py
+
+# 3. Cargar en PostgreSQL (crea esquema + inserta datos)
+python etl/load.py
+```
+
+**Tiempo estimado:** 15-30 minutos (depende de conexión a internet)
+
+### Opción B: Ejecutar paso a paso
+
+```bash
+# Solo extraer
+python etl/extract.py
+
+# Solo transformar
+python etl/transform.py
+
+# Solo cargar
+python etl/load.py
+```
+
+### Explorar datos antes de cargar
+
+Para inspeccionar el contenido de los archivos descargados sin cargar nada:
+
+```bash
+python explorar.py
+```
+
+---
+
+## 📈 Análisis y Consultas
+
+Después de ejecutar el pipeline, puedes ejecutar análisis sobre el Data Warehouse:
+
+```bash
+# Ver todos los queries disponibles
+cat sql/queries_analyze.sql
+
+# Ejecutar un query específico
+psql -U postgres -d flights_dw -f sql/queries_analyze.sql
+```
+
+---
+
+## 🔍 Troubleshooting
+
+### Error: "FATAL: password authentication failed for user 'postgres'"
+
+**Causa:** Contraseña incorrecta o usuario inexistente.
+
+**Solución:**
+1. Verifica tu `.env` tiene la contraseña correcta
+2. Prueba conectar manualmente: `psql -U postgres -W `
+3. Si olvidaste la contraseña, resetéala en PostgreSQL
+
+### Error: "Database flights_dw does not exist"
+
+**Causa:** Base de datos no creada.
+
+**Solución:**
+```bash
+psql -U postgres -c "CREATE DATABASE flights_dw;"
+```
+
+### Error: "ModuleNotFoundError: No module named 'psycopg2'"
+
+**Causa:** Dependencias no instaladas.
+
+**Solución:**
+```bash
+pip install -r requirements.txt
+```
+
+### Error: "No such file or directory: 'staging/raw/...'"
+
+**Causa:** El script `extract.py` no se ejecutó o falló.
+
+**Solución:**
+```bash
+python etl/extract.py
+```
+
+### El script de extract es muy lento
+
+**Causa:** Descargas desde BTS API pueden tardar.
+
+**Solución:** Es normal. Descarga ~200-300 MB. Si se detiene, ejecuta de nuevo (retoma desde donde paró).
+
+### Error de conexión a la BD durante el load
+
+**Verificación rápida:**
+```bash
+# ¿Está PostgreSQL ejecutándose?
+pg_isready -h localhost -p 5432
+
+# ¿Existe la base de datos?
+psql -U postgres -l | grep flights_dw
+
+# ¿Las variables de .env son correctas?
+cat .env
+```
+
+---
+
+## 📦 Dependencias
+
+Las dependencias están documentadas en `requirements.txt`:
+
+- **pandas**: Procesamiento de datos
+- **psycopg2**: Conector PostgreSQL
+- **requests**: Descargas HTTP
+- **tqdm**: Barra de progreso
+- **python-dotenv**: Gestión de variables de entorno
+
+---
+
+## 🎯 Validación de Reproducibilidad
+
+Pasos para verificar que el proyecto es completamente reproducible en una máquina limpia:
+
+```bash
+# 1. Clonar
+git clone https://github.com/KevinCax/proyecto-bdii.git
+cd proyecto-bdii
+
+# 2. Crear entorno
+python -m venv venv
+source venv/bin/activate  # o venv\Scripts\activate en Windows
+
+# 3. Instalar dependencias
+pip install -r requirements.txt
+
+# 4. Configurar .env (ver Paso 4 arriba)
+# Crear .env con credenciales correctas
+
+# 5. Crear BD
+psql -U postgres -c "CREATE DATABASE flights_dw;"
+
+# 6. Ejecutar pipeline
+python etl/extract.py
+python etl/transform.py
+python etl/load.py
+
+# ✅ Si todo ejecuta sin errores, el proyecto es reproducible
+```
+
+---
+
+## 📝 Notas
+
+- **Primera ejecución:** El `extract.py` descarga ~200-300 MB de datos. Es normal que tarde 10-20 minutos.
+- **Reutilizar datos:** Si ya descargaste, puedes comentar el `extract.py` y saltar al `transform.py`.
+- **Base de datos limpia:** Ejecutar `load.py` crea las tablas automáticamente (con DROP IF EXISTS).
+
+---
+
+## ✅ Autores
+Kevin Denilson Cax Coc
+
+Rafael Estuardo Galindo Ramirez
+
+René Alexander Machic Morales
+
+Rudy Neftali Estrada Catalán
+
+
+## Copyright © Todos los derechos reservados

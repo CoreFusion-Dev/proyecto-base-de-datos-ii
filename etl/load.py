@@ -16,7 +16,7 @@ def get_connection():
         port     = os.getenv("DB_PORT", "5432"),
         dbname   = os.getenv("DB_NAME", "flights_dw"),
         user     = os.getenv("DB_USER", "postgres"),
-        password = os.getenv("DB_PASSWORD", "")
+        password = os.getenv("DB_PASSWORD", "5267")
     )
 
 
