@@ -118,3 +118,53 @@ def cargar_fact_copy(conn):
 
     elapsed = time.time() - inicio
     return elapsed
+
+
+# ─────────────────────────────────────────
+# MAIN
+# ─────────────────────────────────────────
+def load():
+    print("=== CARGA A POSTGRESQL ===\n")
+    conn = get_connection()
+    print("Conexión exitosa a PostgreSQL\n")
+
+    crear_esquema(conn)
+
+    tiempos = {}
+
+    # Cargar dimensiones
+    df_tiempo = pd.read_parquet("staging/processed/dim_tiempo.parquet")
+    tiempos["dim_tiempo"] = cargar_dimension(conn, df_tiempo, "dim_tiempo", [
+        "fecha", "dia", "mes", "trimestre",
+        "anio", "dia_semana", "nombre_mes", "nombre_dia", "es_fin_semana"
+    ])
+
+    df_aerolinea = pd.read_parquet("staging/processed/dim_aerolinea.parquet")
+    tiempos["dim_aerolinea"] = cargar_dimension(conn, df_aerolinea, "dim_aerolinea", [
+        "codigo", "nombre"
+    ])
+
+    df_aeropuerto = pd.read_parquet("staging/processed/dim_aeropuerto.parquet")
+    tiempos["dim_aeropuerto"] = cargar_dimension(conn, df_aeropuerto, "dim_aeropuerto", [
+        "codigo", "ciudad", "estado", "nombre_estado", "pais"
+    ])
+
+    df_estado = pd.read_parquet("staging/processed/dim_estado_vuelo.parquet")
+    tiempos["dim_estado_vuelo"] = cargar_dimension(conn, df_estado, "dim_estado_vuelo", [
+        "codigo", "descripcion"
+    ])
+
+    tiempos["fact_vuelos"] = cargar_fact_copy(conn)
+
+    conn.close()
+
+    print("\n══════════════════════════════")
+    print("CARGA COMPLETA")
+    print("══════════════════════════════")
+    for tabla, t in tiempos.items():
+        print(f"   {tabla}: {t:.1f}s")
+    print(f"   TOTAL: {sum(tiempos.values()):.1f}s")
+
+
+if __name__ == "__main__":
+    load()

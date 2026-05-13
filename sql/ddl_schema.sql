@@ -10,6 +10,7 @@
 -- DIMENSIONES
 -- ══════════════════════════════════════════════════════
 
+-- Dimensión de Tiempo
 CREATE TABLE IF NOT EXISTS dim_tiempo (
     tiempo_id     INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     fecha         DATE NOT NULL,
@@ -24,8 +25,7 @@ CREATE TABLE IF NOT EXISTS dim_tiempo (
     CONSTRAINT uq_dim_tiempo_fecha UNIQUE (fecha)
 );
 
-
--- Tabla dimensional de tiempo para registros de arelolinea
+-- Dimensión de Aerolínea
 CREATE TABLE IF NOT EXISTS dim_aerolinea (
     aerolinea_id  INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     codigo        VARCHAR(10) NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS dim_aerolinea (
     CONSTRAINT uq_dim_aerolinea_codigo UNIQUE (codigo)
 );
 
--- Tabla dimensional de aeropuestos destructurada
+-- Dimensión de Aeropuerto (Desnormalizada)
 CREATE TABLE IF NOT EXISTS dim_aeropuerto (
     aeropuerto_id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     codigo        VARCHAR(10) NOT NULL,
@@ -44,17 +44,16 @@ CREATE TABLE IF NOT EXISTS dim_aeropuerto (
     CONSTRAINT uq_dim_aeropuerto_codigo UNIQUE (codigo)
 );
 
--- Tabla dimensional de estados de vuelos desnormalizada
+-- Dimensión de Estado de Vuelo
 CREATE TABLE IF NOT EXISTS dim_estado_vuelo (
-    estado_id    INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    codigo       VARCHAR(20) NOT NULL,
-    descripcion  VARCHAR(100) NOT NULL,
+    estado_id     INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    codigo        VARCHAR(20) NOT NULL,
+    descripcion   VARCHAR(100) NOT NULL,
     CONSTRAINT uq_dim_estado_codigo UNIQUE (codigo)
 );
 
-
 -- ══════════════════════════════════════════════════════
--- TABLA DE HECHOS PADRE (particionada por trimestre)
+-- TABLA DE HECHOS (Particionada)
 -- ══════════════════════════════════════════════════════
 
 CREATE TABLE IF NOT EXISTS fact_vuelos (
@@ -75,7 +74,8 @@ CREATE TABLE IF NOT EXISTS fact_vuelos (
     retraso_clima         NUMERIC(8,2),
     retraso_nas           NUMERIC(8,2),
     retraso_seguridad     NUMERIC(8,2),
-    retraso_aeronave      NUMERIC(8,2)
+    retraso_aeronave      NUMERIC(8,2),
+    CONSTRAINT pk_fact_vuelos PRIMARY KEY (vuelo_id, fecha_vuelo)
 ) PARTITION BY RANGE (fecha_vuelo);
 
 
@@ -169,28 +169,24 @@ CREATE TABLE IF NOT EXISTS fact_vuelos_2024_q4
 
 ALTER TABLE fact_vuelos
     ADD CONSTRAINT fk_fact_tiempo
-        FOREIGN KEY (tiempo_id)
-        REFERENCES dim_tiempo(tiempo_id);
+        FOREIGN KEY (tiempo_id) REFERENCES dim_tiempo(tiempo_id);
 
 ALTER TABLE fact_vuelos
     ADD CONSTRAINT fk_fact_aerolinea
-        FOREIGN KEY (aerolinea_id)
-        REFERENCES dim_aerolinea(aerolinea_id);
+        FOREIGN KEY (aerolinea_id) REFERENCES dim_aerolinea(aerolinea_id);
 
 ALTER TABLE fact_vuelos
     ADD CONSTRAINT fk_fact_origen
-        FOREIGN KEY (aeropuerto_origen_id)
-        REFERENCES dim_aeropuerto(aeropuerto_id);
+        FOREIGN KEY (aeropuerto_origen_id) REFERENCES dim_aeropuerto(aeropuerto_id);
 
 ALTER TABLE fact_vuelos
     ADD CONSTRAINT fk_fact_destino
-        FOREIGN KEY (aeropuerto_destino_id)
-        REFERENCES dim_aeropuerto(aeropuerto_id);
+        FOREIGN KEY (aeropuerto_destino_id) REFERENCES dim_aeropuerto(aeropuerto_id);
 
 ALTER TABLE fact_vuelos
     ADD CONSTRAINT fk_fact_estado
-        FOREIGN KEY (estado_id)
-        REFERENCES dim_estado_vuelo(estado_id);
+        FOREIGN KEY (estado_id) REFERENCES dim_estado_vuelo(estado_id);
+
 
 
 -- ══════════════════════════════════════════════════════

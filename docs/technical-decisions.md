@@ -111,3 +111,55 @@ formas. El índice es más útil en consultas con filtros específicos de aerol�
 combinados con otros criterios.
 
 ---
+
+### Índice 3: `idx_fact_aerolinea_fecha` — compuesto sobre `(aerolinea_id, fecha_vuelo)`
+**Consulta que lo motiva:**
+```sql
+SELECT aerolinea_id, COUNT(*) FROM fact_vuelos
+WHERE fecha_vuelo BETWEEN '2022-06-01' AND '2022-09-30'
+GROUP BY aerolinea_id ORDER BY COUNT(*) DESC;
+```
+**Resultado:**
+```
+SIN índice: Execution Time: 377.355 ms  (Parallel Seq Scan)
+CON índice: Execution Time: 221.188 ms  (Parallel Index Only Scan)
+```
+**Mejora cuantitativa: 41.4% de reducción en tiempo de ejecución.**
+
+El índice compuesto permite un Index Only Scan — PostgreSQL resuelve la consulta
+leyendo solo el índice sin acceder a la tabla principal (Heap Fetches: 0).
+
+---
+
+## 5. Diferenciación OLTP vs OLAP
+
+### Sistema fuente (OLTP)
+El Bureau of Transportation Statistics (BTS) recopila datos de vuelos desde los
+sistemas operacionales de cada aerolínea. Estos sistemas fuente operan bajo el
+paradigma **OLTP (Online Transaction Processing)**:
+- Registran cada vuelo individualmente en tiempo real
+- Están optimizados para operaciones de INSERT/UPDATE frecuentes
+- Tienen esquemas normalizados para evitar anomalías de actualización
+- Procesan miles de transacciones concurrentes por segundo
+
+### Data Warehouse construido (OLAP)
+El sistema construido en este proyecto es un componente **OLAP (Online Analytical Processing)**:
+- Almacena datos históricos de 2 años (13.5M registros) sin modificaciones
+- Está optimizado para consultas analíticas con aggregaciones sobre millones de filas
+- Usa esquema dimensional (estrella) que desnormaliza deliberadamente para mejorar el rendimiento de lectura
+- El particionamiento y los índices están diseñados para acelerar SELECT, no INSERT
+
+**La distinción clave:** No existe carga transaccional real en este proyecto.
+Los datos se cargan en lotes mediante el pipeline ETL (proceso batch), no registro
+por registro como en un sistema OLTP. El ETL actúa como puente entre el mundo
+OLTP (fuente) y el mundo OLAP (Data Warehouse).
+
+---
+
+## 6. Mejoras cuantitativas obtenidas
+
+| Optimización | Antes | Después | Mejora |
+|---|---|---|---|
+| Partition Pruning (Q1 2022) | Scan 13.5M filas | Scan 527K filas | 96% menos filas |
+| Índice compuesto + fecha | 377 ms | 221 ms | 41% más rápido |
+| Tipo de scan con índice compuesto | Seq Scan | Index Only Scan | Sin acceso a heap |
