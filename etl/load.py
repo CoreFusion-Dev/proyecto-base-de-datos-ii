@@ -31,3 +31,25 @@ def crear_esquema(conn):
         cur.execute(sql)
     conn.commit()
     print("Esquema creado correctamente")
+
+
+# ─────────────────────────────────────────
+# CARGA DIMENSIONES
+# ─────────────────────────────────────────
+def cargar_dimension(conn, df, tabla, columnas_sin_id):
+    inicio = time.time()
+
+    rows = [tuple(row) for row in df[columnas_sin_id].itertuples(index=False)]
+    cols = ", ".join(columnas_sin_id)
+    sql  = f"INSERT INTO {tabla} ({cols}) VALUES %s ON CONFLICT DO NOTHING"
+
+    LOTE = 10_000
+    with conn.cursor() as cur:
+        for i in range(0, len(rows), LOTE):
+            execute_values(cur, sql, rows[i:i+LOTE])
+            print(f"   → {min(i+LOTE, len(rows)):,} / {len(rows):,}", end="\r")
+    conn.commit()
+
+    elapsed = time.time() - inicio
+    return elapsed
+
