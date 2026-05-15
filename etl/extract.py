@@ -20,9 +20,9 @@ def is_zip_valid(file_path: str) -> bool:
         return False
     try:
         with zipfile.ZipFile(file_path, 'r') as zf:
-            # zipfile.testzip() retorna None si no hay errores
-            return zf.testzip() is None
-    except (zipfile.BadZipFile, Exception):
+            result = zf.testzip()
+            return result is None
+    except BaseException:
         return False
 
 def download_file(url: str, dest_path: str):
