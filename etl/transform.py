@@ -2,6 +2,7 @@ import os
 import zipfile
 import pandas as pd
 from pathlib import Path
+import numpy as np
 
 # ─────────────────────────────────────────
 # CONFIGURACIÓN
@@ -194,13 +195,15 @@ def construir_fact_vuelos(df, dim_tiempo, dim_aerolinea, dim_aeropuerto, dim_est
         left_on="Dest", right_on="codigo", how="left"
     ).rename(columns={"aeropuerto_id": "aeropuerto_destino_id"})
 
-    def get_estado(row):
-        if row["Cancelled"]: return 3
-        if row["Diverted"]:  return 4
-        if row["ArrDelay"] > 15: return 2
-        return 1
-
-    fact["estado_id"] = fact.apply(get_estado, axis=1)
+    fact["estado_id"] = np.select(
+    [
+        fact["Cancelled"] == True,
+        fact["Diverted"]  == True,
+        fact["ArrDelay"]  > 15,
+    ],
+    [3, 4, 2],
+    default=1
+    )
 
     # Seleccionar solo columnas finales
     fact_final = fact[[

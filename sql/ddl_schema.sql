@@ -74,8 +74,7 @@ CREATE TABLE IF NOT EXISTS fact_vuelos (
     retraso_clima         NUMERIC(8,2),
     retraso_nas           NUMERIC(8,2),
     retraso_seguridad     NUMERIC(8,2),
-    retraso_aeronave      NUMERIC(8,2),
-    CONSTRAINT pk_fact_vuelos PRIMARY KEY (vuelo_id, fecha_vuelo)
+    retraso_aeronave      NUMERIC(8,2)
 ) PARTITION BY RANGE (fecha_vuelo);
 
 
@@ -167,26 +166,53 @@ CREATE TABLE IF NOT EXISTS fact_vuelos_2024_q4
 -- FOREIGN KEYS
 -- ══════════════════════════════════════════════════════
 
-ALTER TABLE fact_vuelos
-    ADD CONSTRAINT fk_fact_tiempo
-        FOREIGN KEY (tiempo_id) REFERENCES dim_tiempo(tiempo_id);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints
+        WHERE constraint_name = 'fk_fact_tiempo'
+    ) THEN
+        ALTER TABLE fact_vuelos
+            ADD CONSTRAINT fk_fact_tiempo
+                FOREIGN KEY (tiempo_id) REFERENCES dim_tiempo(tiempo_id);
+    END IF;
 
-ALTER TABLE fact_vuelos
-    ADD CONSTRAINT fk_fact_aerolinea
-        FOREIGN KEY (aerolinea_id) REFERENCES dim_aerolinea(aerolinea_id);
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints
+        WHERE constraint_name = 'fk_fact_aerolinea'
+    ) THEN
+        ALTER TABLE fact_vuelos
+            ADD CONSTRAINT fk_fact_aerolinea
+                FOREIGN KEY (aerolinea_id) REFERENCES dim_aerolinea(aerolinea_id);
+    END IF;
 
-ALTER TABLE fact_vuelos
-    ADD CONSTRAINT fk_fact_origen
-        FOREIGN KEY (aeropuerto_origen_id) REFERENCES dim_aeropuerto(aeropuerto_id);
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints
+        WHERE constraint_name = 'fk_fact_origen'
+    ) THEN
+        ALTER TABLE fact_vuelos
+            ADD CONSTRAINT fk_fact_origen
+                FOREIGN KEY (aeropuerto_origen_id) REFERENCES dim_aeropuerto(aeropuerto_id);
+    END IF;
 
-ALTER TABLE fact_vuelos
-    ADD CONSTRAINT fk_fact_destino
-        FOREIGN KEY (aeropuerto_destino_id) REFERENCES dim_aeropuerto(aeropuerto_id);
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints
+        WHERE constraint_name = 'fk_fact_destino'
+    ) THEN
+        ALTER TABLE fact_vuelos
+            ADD CONSTRAINT fk_fact_destino
+                FOREIGN KEY (aeropuerto_destino_id) REFERENCES dim_aeropuerto(aeropuerto_id);
+    END IF;
 
-ALTER TABLE fact_vuelos
-    ADD CONSTRAINT fk_fact_estado
-        FOREIGN KEY (estado_id) REFERENCES dim_estado_vuelo(estado_id);
-
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints
+        WHERE constraint_name = 'fk_fact_estado'
+    ) THEN
+        ALTER TABLE fact_vuelos
+            ADD CONSTRAINT fk_fact_estado
+                FOREIGN KEY (estado_id) REFERENCES dim_estado_vuelo(estado_id);
+    END IF;
+END $$;
 
 
 -- ══════════════════════════════════════════════════════

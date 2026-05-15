@@ -11,7 +11,7 @@ from tqdm import tqdm
 OUTPUT_DIR = "staging/raw"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-YEARS  = [2021, 2022, 2023]
+YEARS  = [2021, 2022, 2023, 2024]
 MONTHS = list(range(1, 13))
 
 BASE_URL = (

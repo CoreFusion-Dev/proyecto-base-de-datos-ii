@@ -74,7 +74,13 @@ def cargar_fact_copy(conn):
 
     # Leer fact del staging
     df = pd.read_parquet("staging/processed/fact_vuelos.parquet")
-
+    
+    # Renombrar columnas en inglés a español
+    df = df.rename(columns={
+    "Cancelled": "cancelado",
+    "Diverted":  "desviado"
+    })
+    
     # Convertir fecha_vuelo a string para el mapeo
     df["fecha_vuelo"] = pd.to_datetime(df["fecha_vuelo"]).dt.date
 
