@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS dim_estado_vuelo (
 -- ══════════════════════════════════════════════════════
 
 CREATE TABLE IF NOT EXISTS fact_vuelos (
-    vuelo_id              BIGINT GENERATED ALWAYS AS IDENTITY,
+    vuelo_id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     tiempo_id             INTEGER NOT NULL,
     aerolinea_id          INTEGER NOT NULL,
     aeropuerto_origen_id  INTEGER NOT NULL,
