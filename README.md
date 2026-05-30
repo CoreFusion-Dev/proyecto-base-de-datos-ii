@@ -3,6 +3,12 @@
 
 Pipeline ETL completo para construir un Data Warehouse con datos de desempeño puntual de aerolíneas (2021-2024) desde la API del Bureau of Transportation Statistics (BTS).
 
+**Volumen de datos:**
+- **26.5 millones de registros** de vuelos
+- **4 años** de historial (2021-2024)
+- **16 particiones trimestrales** para query optimization
+- **3 índices** para accelerar consultas analíticas
+
 ---
 
 ## 📋 Requisitos Previos
@@ -147,15 +153,69 @@ python explorar.py
 
 ## 📈 Análisis y Consultas
 
-Después de ejecutar el pipeline, puedes ejecutar análisis sobre el Data Warehouse:
+### Archivo: `queries_analyze.sql`
 
+Este archivo contiene **5 consultas de rendimiento** que demuestran cómo PostgreSQL optimiza las operaciones del Data Warehouse. Cada consulta usa `EXPLAIN ANALYZE` para medir tiempo de ejecución real.
+
+#### 📋 Consultas incluidas:
+
+1. **Partition Pruning** — Demuestra que solo escanea la partición necesaria
+   - Ejecuta: `WHERE fecha_vuelo BETWEEN '2022-01-01' AND '2022-03-31'`
+   - Resultado esperado: Solo `fact_vuelos_2022_q1` es escaneada (96% menos filas)
+
+2. **Índice simple** — Compara rendimiento CON y SIN índice `idx_fact_aerolinea`
+   - DROP → Medir SIN índice → CREATE → Medir CON índice
+   - Propósito: Agregar retrasos promedio por aerolínea
+
+3. **Índice compuesto** — Compara rendimiento CON y SIN índice `idx_fact_aerolinea_fecha`
+   - DROP → Medir → CREATE → Medir
+   - Propósito: Vuelos por aerolínea en un trimestre específico
+   - Mejora esperada: ~41% más rápido con índice compuesto
+
+4. **Consulta analítica** — Vuelos cancelados por aeropuerto en 2022
+   - Demuestra consulta real del dashboard
+   - Incluye filtros + agrupación + ORDER BY
+
+5. **Distribución de particiones** — Cuenta registros por partición
+   - Valida que los 26.5M registros se distribuyeron correctamente
+
+#### ▶️ Cómo ejecutar:
+
+**Opción 1: Ejecutar todo el archivo**
 ```bash
-# Ver todos los queries disponibles
-cat sql/queries_analyze.sql
-
-# Ejecutar un query específico
 psql -U postgres -d flights_dw -f sql/queries_analyze.sql
 ```
+
+**Opción 2: Ejecutar interactivamente desde psql**
+```bash
+psql -U postgres -d flights_dw
+flights_dw=# \i sql/queries_analyze.sql
+```
+
+**Opción 3: Ver el contenido antes de ejecutar**
+```bash
+cat sql/queries_analyze.sql
+```
+
+#### 📊 Interpretar los resultados:
+
+Busca líneas como estas en la salida:
+```
+Execution Time: 298.995 ms
+Parallel Index Only Scan using fact_vuelos_2022_q1_fecha_vuelo_idx
+Rows: 527536 (vs 26.5M sin partition pruning)
+```
+
+**Lo que significa:**
+- **Execution Time**: Tiempo real de ejecución en tu máquina
+- **Index Only Scan**: PostgreSQL resolvió la consulta leyendo solo el índice (más rápido)
+- **Parallel**: Se usó paralelismo (consulta se dividió entre múltiples núcleos)
+- **Rows**: Registros que PostgreSQL tuvo que examinar
+
+#### ⚠️ Importante:
+
+> Las consultas 2 y 3 **DROPEAN y RECREAN índices**. Ejecutarlas en producción puede causar bloqueos.
+> Para uso en desarrollo: ejecuta completo. Para validación puntual: comenta los DROP y copia solo la consulta que necesites.
 
 ---
 

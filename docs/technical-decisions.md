@@ -18,8 +18,8 @@ Se eligió el **esquema estrella** sobre el esquema snowflake por las siguientes
   sin beneficio real dado que los atributos geográficos no se consultan de forma independiente.
 
 ### Tablas del modelo:
-- `fact_vuelos` — tabla de hechos con 13,518,244 registros
-- `dim_tiempo` — 730 registros (granularidad diaria, 2 años)
+- `fact_vuelos` — tabla de hechos con 26,548,545 registros (2021-2024)
+- `dim_tiempo` — 1,461 registros (granularidad diaria, 4 años)
 - `dim_aerolinea` — 17 registros (aerolíneas únicas)
 - `dim_aeropuerto` — 373 registros (aeropuertos origen y destino, role-playing dimension)
 - `dim_estado_vuelo` — 4 registros (ON_TIME, DELAYED, CANCELLED, DIVERTED)
@@ -35,22 +35,18 @@ modelado dimensional llamado role-playing dimension.
 ### Decisión: Particionamiento trimestral por `fecha_vuelo`
 
 Se particionó la tabla de hechos por rango trimestral sobre `fecha_vuelo`, generando
-8 particiones (4 por año × 2 años):
+16 particiones (4 trimestres × 4 años):
 ```
-fact_vuelos_2022_q1: 2022-01-01 → 2022-04-01
-fact_vuelos_2022_q2: 2022-04-01 → 2022-07-01
-fact_vuelos_2022_q3: 2022-07-01 → 2022-10-01
-fact_vuelos_2022_q4: 2022-10-01 → 2023-01-01
-fact_vuelos_2023_q1: 2023-01-01 → 2023-04-01
-fact_vuelos_2023_q2: 2023-04-01 → 2023-07-01
-fact_vuelos_2023_q3: 2023-07-01 → 2023-10-01
-fact_vuelos_2023_q4: 2023-10-01 → 2024-01-01
+2021: fact_vuelos_2021_q1, fact_vuelos_2021_q2, fact_vuelos_2021_q3, fact_vuelos_2021_q4
+2022: fact_vuelos_2022_q1, fact_vuelos_2022_q2, fact_vuelos_2022_q3, fact_vuelos_2022_q4
+2023: fact_vuelos_2023_q1, fact_vuelos_2023_q2, fact_vuelos_2023_q3, fact_vuelos_2023_q4
+2024: fact_vuelos_2024_q1, fact_vuelos_2024_q2, fact_vuelos_2024_q3, fact_vuelos_2024_q4
 ```
 
-**Justificación:** La granularidad trimestral es adecuada para este volumen (~1.7M registros
-por partición en promedio). Una granularidad mensual hubiera generado 24 particiones con
-~565K registros cada una — funcional pero con mayor overhead de gestión. La granularidad
-anual hubiera generado solo 2 particiones con ~6.7M registros cada una, reduciendo
+**Justificación:** La granularidad trimestral es adecuada para este volumen (~1.66M registros
+por partición en promedio). Una granularidad mensual hubiera generado 48 particiones con
+~553K registros cada una — funcional pero con mayor overhead de gestión. La granularidad
+anual hubiera generado solo 4 particiones con ~6.6M registros cada una, reduciendo
 la efectividad del pruning.
 
 ---
@@ -144,7 +140,7 @@ paradigma **OLTP (Online Transaction Processing)**:
 
 ### Data Warehouse construido (OLAP)
 El sistema construido en este proyecto es un componente **OLAP (Online Analytical Processing)**:
-- Almacena datos históricos de 2 años (13.5M registros) sin modificaciones
+- Almacena datos históricos de 4 años (26.5M registros) sin modificaciones
 - Está optimizado para consultas analíticas con aggregaciones sobre millones de filas
 - Usa esquema dimensional (estrella) que desnormaliza deliberadamente para mejorar el rendimiento de lectura
 - El particionamiento y los índices están diseñados para acelerar SELECT, no INSERT
@@ -160,6 +156,96 @@ OLTP (fuente) y el mundo OLAP (Data Warehouse).
 
 | Optimización | Antes | Después | Mejora |
 |---|---|---|---|
-| Partition Pruning (Q1 2022) | Scan 13.5M filas | Scan 527K filas | 96% menos filas |
+| Partition Pruning (Q1 2022) | Scan 26.5M filas | Scan 527K filas | 98% menos filas |
 | Índice compuesto + fecha | 377 ms | 221 ms | 41% más rápido |
 | Tipo de scan con índice compuesto | Seq Scan | Index Only Scan | Sin acceso a heap |
+
+---
+
+## 7. Estrategia de validación con EXPLAIN ANALYZE
+
+### Propósito
+
+El archivo `sql/queries_analyze.sql` contiene una suite de pruebas de rendimiento que valida:
+1. Que el particionamiento funciona correctamente (partition pruning)
+2. Que cada índice mejora realmente el rendimiento
+3. Que las consultas analíticas típicas se ejecutan eficientemente
+4. Que los datos se distribuyeron correctamente entre particiones
+
+### Diseño de las 5 consultas
+
+#### Consulta 1: Partition Pruning
+```sql
+SELECT COUNT(*) FROM fact_vuelos
+WHERE fecha_vuelo BETWEEN '2022-01-01' AND '2022-03-31';
+```
+**Valida:** Que el optimizador aplica partition pruning correctamente.
+- Sin pruning: escanearía 26.5M registros
+- Con pruning: escanea ~1.6M registros (1 partición de 16)
+- Evidencia esperada en EXPLAIN ANALYZE: `fact_vuelos_2022_q1` es la única tabla mencionada
+
+#### Consulta 2: Impacto de índice simple
+Compara 4 pasos:
+1. `DROP INDEX idx_fact_aerolinea` — Eliminar el índice
+2. `EXPLAIN ANALYZE SELECT ... GROUP BY aerolinea_id` — Medir SIN índice
+3. `CREATE INDEX idx_fact_aerolinea ON fact_vuelos (aerolinea_id)` — Recrear
+4. `EXPLAIN ANALYZE SELECT ... GROUP BY aerolinea_id` — Medir CON índice
+
+**Valida:** Que el índice es útil para agregaciones por aerolínea.
+**Nota:** En agregaciones sin filtro, el optimizador puede preferir Sequential Scan 
+porque debe leer todos los registros de todas formas.
+
+#### Consulta 3: Impacto de índice compuesto
+Similar a consulta 2, pero con índice compuesto `(aerolinea_id, fecha_vuelo)`.
+
+**Valida:** Que el índice compuesto permite Index Only Scan (sin acceso a tabla principal).
+**Mejora esperada:** ~41% más rápido gracias a Index Only Scan.
+
+#### Consulta 4: Consulta analítica realista
+```sql
+SELECT aeropuerto_origen_id, COUNT(*) 
+FROM fact_vuelos
+WHERE cancelado = TRUE AND fecha_vuelo BETWEEN '2022-01-01' AND '2022-12-31'
+GROUP BY aeropuerto_origen_id
+ORDER BY COUNT(*) DESC LIMIT 20;
+```
+**Valida:** Que las consultas del dashboard (con filtros + agrupación) son rápidas.
+
+#### Consulta 5: Distribución de datos
+```sql
+SELECT tableoid::regclass, COUNT(*) FROM fact_vuelos GROUP BY tableoid;
+```
+**Valida:** Que los 26.5M registros se distribuyeron equitativamente entre 16 particiones.
+**Resultado esperado:**
+- Cada partición debería tener ~1.66M registros
+- Si alguna partición está vacía o tiene datos muy desbalanceados, indica un problema en ETL
+
+### Cuándo ejecutar
+
+1. **Después de `etl/load.py` completa** — Para validar que el pipeline funcionó
+2. **Después de cambios al schema** — Para medir impacto de nuevos índices
+3. **Durante desarrollo** — Para entender cómo el optimizador ejecuta tus consultas
+4. **Documentación** — Como evidencia en reports o presentaciones
+
+### Interpretación de resultados
+
+```
+EXPLAIN ANALYZE
+  Parallel Index Only Scan using idx_fact_aerolinea_fecha
+  (cost=0.43..27603.35 rows=659420 width=0)
+  (actual time=5.676..245.816 rows=527536 loops=3)
+Execution Time: 298.995 ms
+```
+
+**Campos clave:**
+- **cost=0.43..27603.35**: Estimación de costo del optimizador (no se usa para ejecutar, solo para elegir plan)
+- **rows=659420 (estimated) vs actual rows=527536**: Precisión del estimador
+- **actual time**: Tiempo real medido
+- **loops=3**: Se ejecutó 3 veces en paralelo
+- **Execution Time**: Tiempo total incluido overhead
+
+**Banderas de éxito:**
+- ✅ Index Only Scan (no Seq Scan)
+- ✅ Execution Time cae cuando creas índices
+- ✅ Partition pruning escanea pocas particiones
+- ✅ Filas estimadas ≈ filas actuales (estimador bien calibrado)
