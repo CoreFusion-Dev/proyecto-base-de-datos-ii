@@ -11,8 +11,8 @@ from tqdm import tqdm
 OUTPUT_DIR = "staging/raw"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-YEARS  = [2021, 2022, 2023, 2024]
-MONTHS = list(range(1, 13))
+YEARS  = [2024]
+MONTHS = list(range(1, 1))
 
 BASE_URL = (
     "https://transtats.bts.gov/PREZIP/"

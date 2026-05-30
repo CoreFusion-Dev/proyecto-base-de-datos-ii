@@ -249,3 +249,18 @@ Execution Time: 298.995 ms
 - ✅ Execution Time cae cuando creas índices
 - ✅ Partition pruning escanea pocas particiones
 - ✅ Filas estimadas ≈ filas actuales (estimador bien calibrado)
+
+---
+
+## 8. Preguntas de negocio
+
+1. ¿Cuáles son las aerolíneas con mayor retraso promedio de llegada por trimestre?
+2. ¿Qué aeropuertos concentran la mayor cantidad de vuelos cancelados durante un año específico?
+3. ¿En qué meses se observa la mayor proporción de vuelos con retraso superior a 15 minutos?
+4. ¿Qué rutas origen-destino presentan peor puntualidad de forma recurrente?
+5. ¿Qué aerolíneas tienen mejor desempeño puntual cuando se filtra por temporada alta?
+6. ¿Cómo cambia la tasa de cancelación entre distintos aeropuertos de origen y destino?
+7. ¿Qué porcentaje de vuelos termina desviado por trimestre y qué aerolíneas están más asociadas a esos casos?
+8. ¿Cuáles son los días de la semana con peor puntualidad promedio para salidas y llegadas?
+9. ¿Qué aeropuertos presentan mayor tiempo promedio de vuelo y si eso se correlaciona con más retrasos?
+10. ¿Qué combinación de aerolínea, aeropuerto y trimestre muestra el mejor equilibrio entre volumen de vuelos y puntualidad?
