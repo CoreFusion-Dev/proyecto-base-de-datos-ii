@@ -264,3 +264,13 @@ Execution Time: 298.995 ms
 8. ¿Cuáles son los días de la semana con peor puntualidad promedio para salidas y llegadas?
 9. ¿Qué aeropuertos presentan mayor tiempo promedio de vuelo y si eso se correlaciona con más retrasos?
 10. ¿Qué combinación de aerolínea, aeropuerto y trimestre muestra el mejor equilibrio entre volumen de vuelos y puntualidad?
+
+---
+
+## 9. Conclusiones
+
+1. El modelo estrella fue la mejor decisión para este proyecto porque simplifica las consultas analíticas y reduce la complejidad de joins sobre un volumen grande de datos.
+2. El particionamiento trimestral de `fact_vuelos` mejora la exploración por rangos de fecha y permite que PostgreSQL aplique partition pruning de forma efectiva.
+3. Los índices agregan valor cuando las consultas combinan filtros y agrupaciones específicas, especialmente en escenarios con aerolínea y fecha.
+4. El pipeline ETL separa correctamente las etapas de extracción, transformación y carga, dejando el Data Warehouse listo para análisis sin depender de procesos transaccionales en línea.
+5. Las consultas de negocio muestran que el sistema permite responder preguntas útiles sobre puntualidad, cancelaciones, desvíos y desempeño por aerolínea y aeropuerto.
